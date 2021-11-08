@@ -1,6 +1,8 @@
 #include "WiFi.h"
 #include "ESPAsyncWebServer.h"
+#include <Adafruit_Sensor.h>
 #include <DHT.h>
+
 #define DHTTYPE DHT11 // Tipo de Sensor DHT 11
 #define DHTPIN 2 // Digital pin connected to the DHT sensor
 DHT dht(DHTPIN, DHTTYPE);
@@ -40,18 +42,6 @@ String readDHTHumidity() {
     Serial.println(h);
     return String(h);
   }
-}
-
-// Replaces placeholder with DHT values
-String processor(const String& var){
-  //Serial.println(var);
-  if(var == "TEMPERATURE"){
-    return readDHTTemperature();
-  }
-  else if(var == "HUMIDITY"){
-    return readDHTHumidity();
-  }
-  return String();
 }
 
 const char index_html[] PROGMEM = R"rawliteral(
@@ -116,26 +106,36 @@ setInterval(function ( ) {
 </script>
 </html>)rawliteral";
 
+// Replaces placeholder with DHT values
+String processor(const String& var){
+  //Serial.println(var);
+  if(var == "TEMPERATURE"){
+    return readDHTTemperature();
+  }
+  else if(var == "HUMIDITY"){
+    return readDHTHumidity();
+  }
+  return String();
+}
+
 void setup(){
   Serial.begin(115200);
   dht.begin();
     
   //Connect to the WiFi network
-   WiFi.begin(ssid, pwd);
+  WiFi.begin(ssid, pwd);
   Serial.println("");
   
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    Serial.print("conectando..");
   }
   Serial.println("");
-  Serial.print("Connected to ");
+  Serial.print("conectado a ");
   Serial.println(ssid);
-  Serial.print("IP address: ");
+  Serial.print("endereço IP: ");
   Serial.println(WiFi.localIP());
-  //This initializes udp and transfer buffer
-
   
   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
