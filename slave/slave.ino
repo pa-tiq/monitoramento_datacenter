@@ -93,7 +93,7 @@ void setup(){
 }
 
 void loop(){
-    delay(5000);
+    delay(500);
     //Send broadcast on port 1234
     udp.broadcastTo("Anyone here?", 1234);
     Serial.println("pacote udp enviado");

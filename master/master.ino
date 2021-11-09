@@ -160,7 +160,7 @@ void setup(){
   dht.begin();
     
   //Connect to the WiFi network
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, pwd);
   Serial.println("");
   
@@ -174,8 +174,8 @@ void setup(){
   Serial.println(ssid);
   Serial.print("endereço IP: ");
   Serial.println(WiFi.localIP());
-  
-  // Route for root / web page
+
+    // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", index_html, processor);
   });
@@ -191,10 +191,7 @@ void setup(){
   server.on("/humidity_slave1", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/plain", hum_slave1.c_str());
   });
-
-  // Start server
-  server.begin();
-
+    
     if(udp.listen(1234)) {
         Serial.print("UDP Listening on IP: ");
         Serial.println(WiFi.localIP());
@@ -217,11 +214,14 @@ void setup(){
             //reply to the client
             //packet.printf("Got %u bytes of data", packet.length());
         });
-    }  
+    }
+      
+  // Start server
+  server.begin();
 }
 
 void loop(){
-  //delay(1000);
+  //delay(2000);
   //Send broadcast
   //udp.broadcast("Anyone here?");
 }
