@@ -91,7 +91,7 @@ setInterval(function ( ) {
   };
   xhttp.open("GET", "/temperature", true);
   xhttp.send();
-}, 10000 ) ;
+}, 5000 ) ;
 
 setInterval(function ( ) {
   var xhttp = new XMLHttpRequest();
@@ -102,7 +102,7 @@ setInterval(function ( ) {
   };
   xhttp.open("GET", "/humidity", true);
   xhttp.send();
-}, 10000 ) ;
+}, 5000 ) ;
 </script>
 </html>)rawliteral";
 
@@ -153,5 +153,14 @@ void setup(){
 }
 
 void loop(){
-
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  float y = 0;
+  //data will be sent to server
+  //buf = char(h);
+  uint8_t buffer[50] = "bbb";
+  //send hello world to server
+  Serial.println(h);
+  Serial.println(t);
+  delay(1000);
 }
