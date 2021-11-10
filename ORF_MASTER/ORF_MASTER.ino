@@ -70,7 +70,6 @@ typedef struct struct_message {
   float temp;
   float hum;
   String timestamp;
-  boolean presenca;
   unsigned int readingId;
 } struct_message;
 
@@ -226,9 +225,16 @@ if (!!window.EventSource) {
   document.getElementById("h"+obj.id).innerHTML = obj.humidity.toFixed(2);
   document.getElementById("rt"+obj.id).innerHTML = obj.timestamp;
   document.getElementById("rh"+obj.id).innerHTML = obj.timestamp;
-  document.getElementById("mastert").innerHTML = TM.toFixed(2);
-  document.getElementById("masterh").innerHTML = HM.toFixed(2);
-  document.getElementById("mov").innerHTML = Presenca;
+ }, false);
+
+ source.addEventListener('movimento', function(e) {
+  document.getElementById("mov").innerHTML = e.data;
+ }, false);
+
+  source.addEventListener('master', function(e) {
+    var mast = JSON.parse(e.data);
+    document.getElementById("mastert").innerHTML = mast.temperature.toFixed(2);
+    document.getElementById("masterh").innerHTML = mast.humidity.toFixed(2);
  }, false);
 }
 </script>
@@ -402,16 +408,30 @@ void loop() {
     {
       Presenca=!Presenca;
       changedValue=true;
+      events.send(Presenca, "movimento", millis());
     }
 
     currentMillis=millis();
     if (currentMillis - previousMillis >= interval) {
-    // Save the last time a new reading was published
-    previousMillis = currentMillis;
-    //Set values to send
-    TM = readDHTTemperature();
-    HM = readDHTHumidity();
-    changedValue=true;
+      // Save the last time a new reading was published
+      previousMillis = currentMillis;
+      //Set values to send
+      TM = readDHTTemperature();
+      HM = readDHTHumidity();
+
+      timeClient.forceUpdate();
+      String formatted_Date = timeClient.getFormattedDate();
+      int splitT = formatted_Date.indexOf("T");
+      String time_stamp = formatted_Date.substring(splitT+1, formatted_Date.length()-1);
+
+      JSONVar mast;
+      mast["temperature"] = TM;
+      mast["humidity"] = HM;
+      mast["timestamp"] = time_stamp;
+      String jsonMaster = JSON.stringify(mast);
+
+      events.send(jsonMaster, "master", millis());
+      changedValue=true;
     }
 
     if ((changedTela || changedValue) && brightness != 0)
