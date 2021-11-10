@@ -5,6 +5,8 @@
 #include "ESPAsyncWebServer.h"
 #include <Arduino_JSON.h>
 #include <M5Stack.h>//M5Stack-Core-ESP32
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
 
 extern const unsigned char CTAV2[];
 extern const unsigned char TEMPINVERT[]; //45x45
@@ -16,6 +18,17 @@ extern const unsigned char MovimentoINVERT[]; //45X45
 #define TelaSlave1 2
 #define TelaSlave2 3
 #define TelaSlave3 4
+#define pirPin 22
+
+// Digital pin connected to the DHT sensor
+#define DHTPIN 2  
+
+// Uncomment the type of sensor in use:
+#define DHTTYPE    DHT11     // DHT 11
+//#define DHTTYPE    DHT22     // DHT 22 (AM2302)
+//#define DHTTYPE    DHT21     // DHT 21 (AM2301)
+
+DHT dht(DHTPIN, DHTTYPE);
 
 //* variaveis globais
 //TODO: Mudar para variaveis locais que podem ser acessadas externamente
@@ -26,6 +39,9 @@ float HS3 = 0.0;
 float TS1 = 0.0;
 float TS2 = 0.0;
 float TS3 = 0.0;
+float TM = 0.0;
+float HM = 0.0;
+boolean Presenca = false;
 
 boolean changedValue = false; //armazena se é necessário atualizar a tela
 //* end variaveis globais
@@ -33,6 +49,8 @@ boolean changedValue = false; //armazena se é necessário atualizar a tela
 void ImprimeResumo(float TM, float HM, boolean Presenca, float TS1, float HS1,  float TS2, float HS2, float TS3, float HS3, boolean changedTela);
 void ImprimeSlave(int SlaveId, float Temp, float Hum, boolean changedTela);
 void ImprimeMaster(float TM, float HM, boolean Presenca, boolean changedTela);
+float readDHTTemperature();
+float readDHTHumidity();
 
 // Replace with your network credentials (STATION)
 const char* ssid = "SENSORES";
@@ -52,6 +70,7 @@ typedef struct struct_message {
   float temp;
   float hum;
   String timestamp;
+  boolean presenca;
   unsigned int readingId;
 } struct_message;
 
@@ -138,7 +157,19 @@ const char index_html[] PROGMEM = R"rawliteral(
     <h3>Monitoramento - Datacenter</h3>
   </div>
   <div class="content">
+     <h4>Sensor de Movimento</h4>
+     <p><span class="reading"><span id="mov"></p> 
     <div class="cards">
+       <div class="card temperature">
+        <h4><i class="fas fa-thermometer-half"></i> Medidor Mestre - Temperatura</h4>
+        <p><span class="reading"><span id="mastert"></span> &deg;C</span></p>
+        <p class="packet">Leitura em <span id="rt1"></span></p>
+      </div>
+      <div class="card humidity">
+        <h4><i class="fas fa-tint"></i> Medidor Mestre - Umidade</h4>
+        <p><span class="reading"><span id="masterh"></span> &percnt;</span></p>
+        <p class="packet">Leitura em <span id="rh1"></span></p>
+      </div>
       <div class="card temperature">
         <h4><i class="fas fa-thermometer-half"></i> Medidor 1 - Temperatura</h4>
         <p><span class="reading"><span id="t1"></span> &deg;C</span></p>
@@ -195,6 +226,9 @@ if (!!window.EventSource) {
   document.getElementById("h"+obj.id).innerHTML = obj.humidity.toFixed(2);
   document.getElementById("rt"+obj.id).innerHTML = obj.timestamp;
   document.getElementById("rh"+obj.id).innerHTML = obj.timestamp;
+  document.getElementById("mastert").innerHTML = TM.toFixed(2);
+  document.getElementById("masterh").innerHTML = HM.toFixed(2);
+  document.getElementById("mov").innerHTML = Presenca;
  }, false);
 }
 </script>
@@ -316,9 +350,9 @@ void loop() {
     lastEventTime = millis();
   }
   // variavel ambiental
-  float TM = 0.0;
-  float HM = 0.0;
-  boolean Presenca = false;
+  TM = 0.0;
+  HM = 0.0;
+  Presenca = false;
   //variavel da tela
   boolean changedTela = true;
   int TelaAtual = TelaResumo;
@@ -424,7 +458,7 @@ void ImprimeResumo(float TM, float HM, boolean Presenca, float TS1, float HS1,  
   M5.Lcd.printf("C \nUmidade: %.1f%% \n", HM);
   M5.Lcd.printf("Sensor de Presenca: ");
   if (Presenca)
-  { M5.Lcd.println("Detectada");
+  { M5.Lcd.println("Detectada    ");
   }
   else {
     M5.Lcd.println("Nao Detectada");
@@ -509,4 +543,34 @@ void ImprimeMaster(float TM, float HM, boolean Presenca,boolean changedTela)
     M5.Lcd.println("-----");
   }
 
+}
+
+float readDHTTemperature() {
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+  // Read temperature as Fahrenheit (isFahrenheit = true)
+  //float t = dht.readTemperature(true);
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(t)) {    
+    Serial.println("Failed to read from DHT sensor!");
+    return 0;
+  }
+  else {
+    Serial.println(t);
+    return t;
+  }
+}
+
+float readDHTHumidity() {
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float h = dht.readHumidity();
+  if (isnan(h)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return 0;
+  }
+  else {
+    Serial.println(h);
+    return h;
+  }
 }
