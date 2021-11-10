@@ -115,7 +115,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html>
 <head>
-  <title>ESP-NOW DASHBOARD</title>
+  <title>ESP32 DASHBOARD</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
   <link rel="icon" href="data:,">
@@ -123,7 +123,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     html {font-family: Arial; display: inline-block; text-align: center;}
     p {  font-size: 1.2rem;}
     body {  margin: 0;}
-    .topnav { overflow: hidden; background-color: #2f4468; color: white; font-size: 1.7rem; }
+    .topnav { overflow: hidden; background-image:"https://img.freepik.com/vetores-gratis/fundo-de-respingos-de-camuflagem_1102-1134.jpg?size=626&ext=jpg"; background-color: #2f4468; color: white; font-size: 1.7rem; }
     .content { padding: 20px; }
     .card { background-color: white; box-shadow: 2px 2px 12px 1px rgba(140,140,140,.5); }
     .cards { max-width: 700px; margin: 0 auto; display: grid; grid-gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
@@ -135,7 +135,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 </head>
 <body>
   <div class="topnav">
-    <h3>ESP32 DHT Server</h3>
+    <h3>Monitoramento - Datacenter</h3>
   </div>
   <div class="content">
     <div class="cards">
@@ -201,6 +201,49 @@ if (!!window.EventSource) {
 </body>
 </html>)rawliteral";
 
+const char dev_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML><html>
+<head>
+  <title>dev</title>
+</head>
+<body>
+<p> medidor 1 temperatura: <span id="t1"></span>
+<p> medidor 1 umidade: <span id="h1"></span>
+
+<p> medidor 2 temperatura: <span id="t2"></span>
+<p> medidor 2 umidade: <span id="h2"></span>
+
+<p> medidor 3 temperatura: <span id="t3"></span>
+<p> medidor 4 umidade: <span id="h3"></span>
+
+<script>
+if (!!window.EventSource) {
+ var source = new EventSource('/events');
+
+ source.addEventListener('open', function(e) {
+  console.log("Events Connected");
+ }, false);
+ source.addEventListener('error', function(e) {
+  if (e.target.readyState != EventSource.OPEN) {
+    console.log("Events Disconnected");
+  }
+ }, false);
+
+ source.addEventListener('message', function(e) {
+  console.log("message", e.data);
+ }, false);
+
+ source.addEventListener('new_readings', function(e) {
+  console.log("new_readings", e.data);
+  var obj = JSON.parse(e.data);
+  document.getElementById("t"+obj.id).innerHTML = obj.temperature.toFixed(2);
+  document.getElementById("h"+obj.id).innerHTML = obj.humidity.toFixed(2);
+ }, false);
+}
+</script>
+</body>
+</html>)rawliteral";
+
 void setup() {
   M5.begin();
   M5.Lcd.fillScreen(WHITE);
@@ -249,6 +292,10 @@ void setup() {
     request->send_P(200, "text/html", index_html);
   });
 
+  server.on("/dev", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send_P(200, "text/html", dev_html);
+  });
+
   events.onConnect([](AsyncEventSourceClient * client) {
     if (client->lastId()) {
       Serial.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
@@ -277,17 +324,6 @@ void loop() {
   int TelaAtual = TelaResumo;
   int brightness = 100;
 
-  while(!timeClient.update()){
-    timeClient.forceUpdate();
-  }
-  // The formattedDate comes with the following format:
-  // 2018-05-28T16:00:13Z
-  // We need to extract date and time
-  formattedDate = timeClient.getFormattedDate();
-  int splitT = formattedDate.indexOf("T");
-  dayStamp = formattedDate.substring(0, splitT);
-  timeStamp = formattedDate.substring(splitT+1, formattedDate.length()-1);
-  //
   while (1) {
     M5.update(); //Read the press state of the key.   A, B, C
     if (M5.BtnC.wasReleased()) {
