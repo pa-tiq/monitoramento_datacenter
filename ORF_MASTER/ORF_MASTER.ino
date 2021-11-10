@@ -162,12 +162,12 @@ const char index_html[] PROGMEM = R"rawliteral(
        <div class="card temperature">
         <h4><i class="fas fa-thermometer-half"></i> Medidor Mestre - Temperatura</h4>
         <p><span class="reading"><span id="mastert"></span> &deg;C</span></p>
-        <p class="packet">Leitura em <span id="rt1"></span></p>
+        <p class="packet">Leitura em <span id="timestamp1"></span></p>
       </div>
       <div class="card humidity">
         <h4><i class="fas fa-tint"></i> Medidor Mestre - Umidade</h4>
         <p><span class="reading"><span id="masterh"></span> &percnt;</span></p>
-        <p class="packet">Leitura em <span id="rh1"></span></p>
+        <p class="packet">Leitura em <span id="timestamp2"></span></p>
       </div>
       <div class="card temperature">
         <h4><i class="fas fa-thermometer-half"></i> Medidor 1 - Temperatura</h4>
@@ -236,6 +236,8 @@ if (!!window.EventSource) {
     var mast = JSON.parse(e.data);
     document.getElementById("mastert").innerHTML = mast.temperature.toFixed(2);
     document.getElementById("masterh").innerHTML = mast.humidity.toFixed(2);
+    document.getElementById("timestamp1").innerHTML = mast.timestamp;
+    document.getElementById("timestamp2").innerHTML = mast.timestamp;
  }, false);
 }
 </script>
