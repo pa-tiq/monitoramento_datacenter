@@ -2,7 +2,7 @@
 #include "ESPAsyncWebServer.h"
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
-#include "AsyncUDP.h"
+#include <esp_now.h>
 
 #define DHTTYPE DHT11 // Tipo de Sensor DHT 11
 #define DHTPIN 2 // Digital pin connected to the DHT sensor
@@ -12,13 +12,42 @@ DHT dht(DHTPIN, DHTTYPE);
 const char * ssid = "IMEORF";
 const char * pwd = "ricardofranco";
 
-AsyncUDP udp;
+typedef struct struct_message {
+    int id; // must be unique for each sender board
+    String temp;
+    String hum;
+} struct_message;
 
-String temp_slave1;
-String hum_slave1;
+// Create a struct_message called myData
+struct_message myData;
+
+// Create a structure to hold the readings from each board
+struct_message board1;
+struct_message board2;
+struct_message board3;
+
+// Create an array with all the structures
+struct_message boardsStruct[3] = {board1, board2, board3};
 
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
+
+// callback function that will be executed when data is received
+void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) {
+  char macStr[18];
+  Serial.print("Packet received from: ");
+  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  Serial.println(macStr);
+  memcpy(&myData, incomingData, sizeof(myData));
+  Serial.printf("Board ID %u: %u bytes\n", myData.id, len);
+  // Update the structures with the new incoming data
+  boardsStruct[myData.id-1].temp = myData.temp;
+  boardsStruct[myData.id-1].hum = myData.hum;
+  Serial.printf("x value: %s \n", boardsStruct[myData.id-1].temp);
+  Serial.printf("x value: %s \n", boardsStruct[myData.id-1].hum);
+  Serial.println();
+}
 
 String readDHTTemperature() {
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
@@ -160,7 +189,7 @@ void setup(){
   dht.begin();
     
   //Connect to the WiFi network
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, pwd);
   Serial.println("");
   
@@ -174,8 +203,8 @@ void setup(){
   Serial.println(ssid);
   Serial.print("endereço IP: ");
   Serial.println(WiFi.localIP());
-  
-  // Route for root / web page
+
+    // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", index_html, processor);
   });
@@ -186,42 +215,28 @@ void setup(){
     request->send_P(200, "text/plain", readDHTHumidity().c_str());
   });
   server.on("/temperature_slave1", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/plain", temp_slave1.c_str());
+    request->send_P(200, "text/plain", myData.temp.c_str());
   });
   server.on("/humidity_slave1", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/plain", hum_slave1.c_str());
+    request->send_P(200, "text/plain", myData.temp.c_str());
   });
-
+      
   // Start server
   server.begin();
 
-    if(udp.listen(1234)) {
-        Serial.print("UDP Listening on IP: ");
-        Serial.println(WiFi.localIP());
-        udp.onPacket([](AsyncUDPPacket packet) {
-            Serial.print("UDP Packet Type: ");
-            Serial.print(packet.isBroadcast()?"Broadcast":packet.isMulticast()?"Multicast":"Unicast");
-            Serial.print(", From: ");
-            Serial.print(packet.remoteIP());
-            Serial.print(":");
-            Serial.print(packet.remotePort());
-            Serial.print(", To: ");
-            Serial.print(packet.localIP());
-            Serial.print(":");
-            Serial.print(packet.localPort());
-            Serial.print(", Length: ");
-            Serial.print(packet.length());
-            Serial.print(", Data: ");
-            Serial.write(packet.data(), packet.length());
-            Serial.println();
-            //reply to the client
-            //packet.printf("Got %u bytes of data", packet.length());
-        });
-    }  
+    //Init ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+  
+  // Once ESPNow is successfully Init, we will register for recv CB to
+  // get recv packer info
+  esp_now_register_recv_cb(OnDataRecv);
 }
 
 void loop(){
-  //delay(1000);
-  //Send broadcast
-  //udp.broadcast("Anyone here?");
+  //delay(2000);
+
+    delay(10000);  
 }

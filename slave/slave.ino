@@ -1,7 +1,7 @@
 #include "WiFi.h"
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
-#include <AsyncUDP.h>
+#include <esp_now.h>
 
 #define DHTTYPE DHT11 // Tipo de Sensor DHT 11
 #define DHTPIN 2 // Digital pin connected to the DHT sensor
@@ -11,7 +11,29 @@ DHT dht(DHTPIN, DHTTYPE);
 const char * ssid = "IMEORF";
 const char * pwd = "ricardofranco";
 
-AsyncUDP udp;
+// REPLACE WITH THE RECEIVER'S MAC Address
+//AC:67:B2:38:F7:F8
+uint8_t broadcastAddress[] = {0xAC, 0x67, 0xB2, 0x38, 0xF7, 0xF8};
+
+// Structure example to send data
+// Must match the receiver structure
+typedef struct struct_message {
+    int id; // must be unique for each sender board
+    String temp;
+    String hum;
+} struct_message;
+
+struct_message myData;
+
+
+// Create peer interface
+esp_now_peer_info_t peerInfo;
+
+// callback when data is sent
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("\r\nLast Packet Send Status:\t");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+}
 
 String readDHTTemperature() {
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
@@ -48,13 +70,33 @@ void setup(){
   dht.begin();
     
   //Connect to the WiFi network
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, pwd);
   Serial.println("");
-  
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print("conectando..");
+  }
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+   // Once ESPNow is successfully Init, we will register for Send CB to
+  // get the status of Trasnmitted packet
+  esp_now_register_send_cb(OnDataSent);
+  
+  // Register peer
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = 0;  
+  peerInfo.encrypt = false;
+  
+  // Add peer        
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add peer");
+    return;
   }
   Serial.println("");
   Serial.print("conectado a ");
@@ -62,40 +104,25 @@ void setup(){
   Serial.print("endereço IP: ");
   Serial.println(WiFi.localIP());
   
-  if(udp.connect(IPAddress(192,168,0,153), 1234)) {
-        Serial.println("UDP connected");
-        udp.onPacket([](AsyncUDPPacket packet) {
-            Serial.print("UDP Packet Type: ");
-            Serial.print(packet.isBroadcast()?"Broadcast":packet.isMulticast()?"Multicast":"Unicast");
-            Serial.print(", From: ");
-            Serial.print(packet.remoteIP());
-            Serial.print(":");
-            Serial.print(packet.remotePort());
-            Serial.print(", To: ");
-            Serial.print(packet.localIP());
-            Serial.print(":");
-            Serial.print(packet.localPort());
-            Serial.print(", Length: ");
-            Serial.print(packet.length());
-            Serial.print(", Data: ");
-            Serial.write(packet.data(), packet.length());
-            Serial.println();
-            //reply to the client
-            //packet.printf("Got %u bytes of data", packet.length());
-        });
-        //Send unicast
-        //udp.print("Hello Server!");
-    }
-    else{
-      Serial.println("UDP failed");
-    }
+  Serial.print("ESP Board MAC Address:  ");
+  Serial.println(WiFi.macAddress());
 
 }
 
 void loop(){
-    delay(5000);
-    //Send broadcast on port 1234
-    udp.broadcastTo("Anyone here?", 1234);
-    Serial.println("pacote udp enviado");
-    
+  // Set values to send
+  myData.id = 1;
+  myData.temp = readDHTTemperature();
+  myData.hum = readDHTHumidity();
+
+  // Send message via ESP-NOW
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
+   
+  if (result == ESP_OK) {
+    Serial.println("Sent with success");
+  }
+  else {
+    Serial.println("Error sending the data");
+  }
+  delay(10000);    
 }
