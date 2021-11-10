@@ -35,7 +35,7 @@ void ImprimeSlave(int SlaveId, float Temp, float Hum, boolean changedTela);
 void ImprimeMaster(float TM, float HM, boolean Presenca, boolean changedTela);
 
 // Replace with your network credentials (STATION)
-const char* ssid = "IMEORF";
+const char* ssid = "SENSORES";
 const char* password = "ricardofranco";
 
 // Define NTP Client to get time
@@ -213,9 +213,15 @@ void setup() {
 
   // Set the device as a Station and Soft Access Point simultaneously
   WiFi.mode(WIFI_AP_STA);
-
+  IPAddress local_IP(192, 168, 0, 200);
+  IPAddress gateway(192, 168, 0 ,1);
+  IPAddress subnet(255, 255, 255, 0);
+  if (!WiFi.config(local_IP,gateway,subnet)) {
+    Serial.println("STA Failed to configure");
+  }
   // Set device as a Wi-Fi Station
   WiFi.begin(ssid, password);
+ 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Setting as a Wi-Fi Station..");
@@ -226,7 +232,7 @@ void setup() {
   Serial.println(WiFi.channel());
   
   timeClient.begin();
-  timeClient.setTimeOffset(3600);
+  timeClient.setTimeOffset(-14400); //manaus é GMT -4
   Serial.println("deu certo ligar o timeClient");
   
   // Init ESP-NOW

@@ -16,7 +16,7 @@
 #include <DHT.h>
 
 // Set your Board ID (ESP32 Sender #1 = BOARD_ID 1, ESP32 Sender #2 = BOARD_ID 2, etc)
-#define BOARD_ID 1
+#define BOARD_ID 3 //MUDAR PRA TODO MEDIDOR
 
 // Digital pin connected to the DHT sensor
 #define DHTPIN 2  
@@ -49,7 +49,7 @@ const long interval = 5000;        // Interval at which to publish sensor readin
 unsigned int readingId = 0;
 
 // Insert your SSID
-constexpr char WIFI_SSID[] = "IMEORF";
+constexpr char WIFI_SSID[] = "SENSORES";
 
 int32_t getWiFiChannel(const char *ssid) {
   if (int32_t n = WiFi.scanNetworks()) {
