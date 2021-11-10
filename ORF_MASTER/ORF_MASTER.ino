@@ -81,7 +81,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
   board["temperature"] = incomingReadings.temp;
   board["humidity"] = incomingReadings.hum;
   board["readingId"] = String(incomingReadings.readingId);
-  board["timestamp"] = timeStamp;
+  board["timestamp"] = time_stamp;
   String jsonString = JSON.stringify(board);
   events.send(jsonString.c_str(), "new_readings", millis());
 
@@ -142,32 +142,32 @@ const char index_html[] PROGMEM = R"rawliteral(
       <div class="card temperature">
         <h4><i class="fas fa-thermometer-half"></i> Medidor 1 - Temperatura</h4>
         <p><span class="reading"><span id="t1"></span> &deg;C</span></p>
-        <p class="packet">Leitura em: <span id="rt1"></span></p>
+        <p class="packet">Leitura em <span id="rt1"></span></p>
       </div>
       <div class="card humidity">
         <h4><i class="fas fa-tint"></i> Medidor 1 - Umidade</h4>
         <p><span class="reading"><span id="h1"></span> &percnt;</span></p>
-        <p class="packet">Leitura em: <span id="rh1"></span></p>
+        <p class="packet">Leitura em <span id="rh1"></span></p>
       </div>
       <div class="card temperature">
         <h4><i class="fas fa-thermometer-half"></i> Medidor 2 - Temperatura</h4>
         <p><span class="reading"><span id="t2"></span> &deg;C</span></p>
-        <p class="packet">Leitura em: <span id="rt2"></span></p>
+        <p class="packet">Leitura em <span id="rt2"></span></p>
       </div>
       <div class="card humidity">
         <h4><i class="fas fa-tint"></i> Medidor 2 - Umidade</h4>
         <p><span class="reading"><span id="h2"></span> &percnt;</span></p>
-        <p class="packet">Leitura em: <span id="rh2"></span></p>
+        <p class="packet">Leitura em <span id="rh2"></span></p>
       </div>
        <div class="card temperature">
         <h4><i class="fas fa-thermometer-half"></i> Medidor 3 - Temperatura</h4>
         <p><span class="reading"><span id="t3"></span> &deg;C</span></p>
-        <p class="packet">Leitura em: <span id="rt3"></span></p>
+        <p class="packet">Leitura em <span id="rt3"></span></p>
       </div>
       <div class="card humidity">
         <h4><i class="fas fa-tint"></i> Medidor 3 - Umidade</h4>
         <p><span class="reading"><span id="h3"></span> &percnt;</span></p>
-        <p class="packet">Leitura em: <span id="rh3"></span></p>
+        <p class="packet">Leitura em <span id="rh3"></span></p>
       </div>
     </div>
   </div>
@@ -209,7 +209,7 @@ void setup() {
   M5.Lcd.pushImage(11, 10, 217, 300, (uint16_t *)CTAV2);
 
   // Initialize Serial Monitor
-  Serial.begin(115200);
+  //Serial.begin(115200);
 
   // Set the device as a Station and Soft Access Point simultaneously
   WiFi.mode(WIFI_AP_STA);
@@ -227,7 +227,8 @@ void setup() {
   
   timeClient.begin();
   timeClient.setTimeOffset(3600);
-
+  Serial.println("deu certo ligar o timeClient");
+  
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
