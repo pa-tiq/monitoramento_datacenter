@@ -21,7 +21,7 @@ extern const unsigned char MovimentoINVERT[]; //45X45
 #define pirPin 22
 
 // Digital pin connected to the DHT sensor
-#define DHTPIN 2  
+#define DHTPIN 5  
 
 // Uncomment the type of sensor in use:
 #define DHTTYPE    DHT11     // DHT 11
@@ -352,10 +352,7 @@ void setup() {
 void loop() {
   static unsigned long lastEventTime = millis();
   static const unsigned long EVENT_INTERVAL_MS = 5000;
-  if ((millis() - lastEventTime) > EVENT_INTERVAL_MS) {
-    events.send("ping", NULL, millis());
-    lastEventTime = millis();
-  }
+
   // variavel ambiental
   TM = 0.0;
   HM = 0.0;
@@ -371,6 +368,10 @@ void loop() {
   const int interval = 5000;        // Interval at which to publish DTH sensor readings
 
   while (1) {
+    if ((millis() - lastEventTime) > EVENT_INTERVAL_MS) {
+      events.send("ping", NULL, millis());
+      lastEventTime = millis();
+    }
     M5.update(); //Read the press state of the key.   A, B, C
     if (M5.BtnC.wasReleased()) {
       changedTela = true;
