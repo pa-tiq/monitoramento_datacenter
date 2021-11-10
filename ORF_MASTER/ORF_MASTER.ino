@@ -214,7 +214,7 @@ const char dev_html[] PROGMEM = R"rawliteral(
 <p> medidor 2 umidade: <span id="h2"></span>
 
 <p> medidor 3 temperatura: <span id="t3"></span>
-<p> medidor 4 umidade: <span id="h3"></span>
+<p> medidor 3 umidade: <span id="h3"></span>
 
 <script>
 if (!!window.EventSource) {
@@ -324,6 +324,11 @@ void loop() {
   int TelaAtual = TelaResumo;
   int brightness = 100;
 
+    // sensor de temperatura
+  unsigned long previousMillis = 0;   // Stores last time temperature was published
+   unsigned long currentMillis = 0;
+  const int interval = 5000;        // Interval at which to publish DTH sensor readings
+
   while (1) {
     M5.update(); //Read the press state of the key.   A, B, C
     if (M5.BtnC.wasReleased()) {
@@ -357,6 +362,22 @@ void loop() {
         delay(50);
       }
       //Serial.print("BtnB mais de 3s");
+    }
+
+    if(digitalRead(pirPin)!= Presenca)
+    {
+      Presenca=!Presenca;
+      changedValue=true;
+    }
+
+    currentMillis=millis();
+    if (currentMillis - previousMillis >= interval) {
+    // Save the last time a new reading was published
+    previousMillis = currentMillis;
+    //Set values to send
+    TM = readDHTTemperature();
+    HM = readDHTHumidity();
+    changedValue=true;
     }
 
     if ((changedTela || changedValue) && brightness != 0)
