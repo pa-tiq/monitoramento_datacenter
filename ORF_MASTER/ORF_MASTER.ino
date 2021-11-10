@@ -72,6 +72,11 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
   Serial.println(macStr);
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
 
+  timeClient.forceUpdate();
+  String formatted_Date = timeClient.getFormattedDate();
+  int splitT = formatted_Date.indexOf("T");
+  String time_stamp = formatted_Date.substring(splitT+1, formatted_Date.length()-1);
+  
   board["id"] = incomingReadings.id;
   board["temperature"] = incomingReadings.temp;
   board["humidity"] = incomingReadings.hum;
@@ -219,6 +224,9 @@ void setup() {
   Serial.println(WiFi.localIP());
   Serial.print("Wi-Fi Channel: ");
   Serial.println(WiFi.channel());
+  
+  timeClient.begin();
+  timeClient.setTimeOffset(3600);
 
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -244,9 +252,6 @@ void setup() {
   });
   server.addHandler(&events);
   server.begin();
-
-  timeClient.begin();
-  timeClient.setTimeOffset(3600);
 }
 
 void loop() {
