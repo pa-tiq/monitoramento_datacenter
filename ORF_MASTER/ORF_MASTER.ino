@@ -228,7 +228,8 @@ if (!!window.EventSource) {
  }, false);
 
  source.addEventListener('movimento', function(e) {
-  document.getElementById("mov").innerHTML = e.data;
+   var mov = JSON.parse(e.data);
+  document.getElementById("mov").innerHTML = mov.movimento;
  }, false);
 
   source.addEventListener('master', function(e) {
@@ -408,7 +409,12 @@ void loop() {
     {
       Presenca=!Presenca;
       changedValue=true;
-      events.send(Presenca, "movimento", millis());
+
+      JSONVar mov;
+      mov["movimento"] = Presenca;
+      String jsonMovimento = JSON.stringify(mov);
+
+      events.send(jsonMovimento.c_str(), "movimento", millis());
     }
 
     currentMillis=millis();
@@ -430,7 +436,7 @@ void loop() {
       mast["timestamp"] = time_stamp;
       String jsonMaster = JSON.stringify(mast);
 
-      events.send(jsonMaster, "master", millis());
+      events.send(jsonMaster.c_str(), "master", millis());
       changedValue=true;
     }
 
@@ -478,7 +484,7 @@ void ImprimeResumo(float TM, float HM, boolean Presenca, float TS1, float HS1,  
   M5.Lcd.printf("C \nUmidade: %.1f%% \n", HM);
   M5.Lcd.printf("Sensor de Presenca: ");
   if (Presenca)
-  { M5.Lcd.println("Detectada    ");
+  { M5.Lcd.println("Detectada");
   }
   else {
     M5.Lcd.println("Nao Detectada");
@@ -545,6 +551,7 @@ void ImprimeMaster(float TM, float HM, boolean Presenca,boolean changedTela)
     
     M5.Lcd.pushImage(5, ypos, 45, 45, (uint16_t *)TEMPINVERT);
   }
+  M5.Lcd.setTextSize(4);
   M5.Lcd.setCursor(63, ypos + 10);
   M5.Lcd.printf("%.1f", TM);
   M5.Lcd.print((char)247);
@@ -557,12 +564,12 @@ void ImprimeMaster(float TM, float HM, boolean Presenca,boolean changedTela)
   M5.Lcd.pushImage(10, ypos3, 45, 45, (uint16_t *)MovimentoINVERT);
   M5.Lcd.setCursor(63, ypos3 + 10);
   if (Presenca)
-  { M5.Lcd.println("Detectada");
+  { M5.Lcd.setTextSize(3);
+    M5.Lcd.println("Detectada");
   }
   else {
-    M5.Lcd.println("-----");
+    M5.Lcd.println("-------  ");
   }
-
 }
 
 float readDHTTemperature() {
