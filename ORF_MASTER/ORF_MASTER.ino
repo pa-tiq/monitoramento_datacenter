@@ -1,22 +1,10 @@
-
-
-/*
-  Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/esp32-esp-now-wi-fi-web-server/
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files.
-
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-*/
-
 #include <esp_now.h>
 #include <WiFi.h>
+#include <WiFiUdp.h>
+#include <NTPClient.h>
 #include "ESPAsyncWebServer.h"
 #include <Arduino_JSON.h>
-#include <M5Stack.h>
-
+#include <M5Stack.h>//M5Stack-Core-ESP32
 
 extern const unsigned char CTAV2[];
 extern const unsigned char TEMPINVERT[]; //45x45
@@ -50,12 +38,20 @@ void ImprimeMaster(float TM, float HM, boolean Presenca, boolean changedTela);
 const char* ssid = "IMEORF";
 const char* password = "ricardofranco";
 
+// Define NTP Client to get time
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP);
+String formattedDate;
+String dayStamp;
+String timeStamp;
+
 // Structure example to receive data
 // Must match the sender structure
 typedef struct struct_message {
   int id;
   float temp;
   float hum;
+  String timestamp;
   unsigned int readingId;
 } struct_message;
 
@@ -80,6 +76,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
   board["temperature"] = incomingReadings.temp;
   board["humidity"] = incomingReadings.hum;
   board["readingId"] = String(incomingReadings.readingId);
+  board["timestamp"] = timeStamp;
   String jsonString = JSON.stringify(board);
   events.send(jsonString.c_str(), "new_readings", millis());
 
@@ -133,27 +130,39 @@ const char index_html[] PROGMEM = R"rawliteral(
 </head>
 <body>
   <div class="topnav">
-    <h3>ESP-NOW DASHBOARD</h3>
+    <h3>ESP32 DHT Server</h3>
   </div>
   <div class="content">
     <div class="cards">
       <div class="card temperature">
-        <h4><i class="fas fa-thermometer-half"></i> BOARD #1 - TEMPERATURE</h4><p><span class="reading"><span id="t1"></span> &deg;C</span></p><p class="packet">Reading ID: <span id="rt1"></span></p>
+        <h4><i class="fas fa-thermometer-half"></i> Medidor 1 - Temperatura</h4>
+        <p><span class="reading"><span id="t1"></span> &deg;C</span></p>
+        <p class="packet">Leitura em: <span id="rt1"></span></p>
       </div>
       <div class="card humidity">
-        <h4><i class="fas fa-tint"></i> BOARD #1 - HUMIDITY</h4><p><span class="reading"><span id="h1"></span> &percnt;</span></p><p class="packet">Reading ID: <span id="rh1"></span></p>
+        <h4><i class="fas fa-tint"></i> Medidor 1 - Umidade</h4>
+        <p><span class="reading"><span id="h1"></span> &percnt;</span></p>
+        <p class="packet">Leitura em: <span id="rh1"></span></p>
       </div>
       <div class="card temperature">
-        <h4><i class="fas fa-thermometer-half"></i> BOARD #2 - TEMPERATURE</h4><p><span class="reading"><span id="t2"></span> &deg;C</span></p><p class="packet">Reading ID: <span id="rt2"></span></p>
+        <h4><i class="fas fa-thermometer-half"></i> Medidor 2 - Temperatura</h4>
+        <p><span class="reading"><span id="t2"></span> &deg;C</span></p>
+        <p class="packet">Leitura em: <span id="rt2"></span></p>
       </div>
       <div class="card humidity">
-        <h4><i class="fas fa-tint"></i> BOARD #2 - HUMIDITY</h4><p><span class="reading"><span id="h2"></span> &percnt;</span></p><p class="packet">Reading ID: <span id="rh2"></span></p>
+        <h4><i class="fas fa-tint"></i> Medidor 2 - Umidade</h4>
+        <p><span class="reading"><span id="h2"></span> &percnt;</span></p>
+        <p class="packet">Leitura em: <span id="rh2"></span></p>
       </div>
        <div class="card temperature">
-        <h4><i class="fas fa-thermometer-half"></i> BOARD #3 - TEMPERATURE</h4><p><span class="reading"><span id="t3"></span> &deg;C</span></p><p class="packet">Reading ID: <span id="rt3"></span></p>
+        <h4><i class="fas fa-thermometer-half"></i> Medidor 3 - Temperatura</h4>
+        <p><span class="reading"><span id="t3"></span> &deg;C</span></p>
+        <p class="packet">Leitura em: <span id="rt3"></span></p>
       </div>
       <div class="card humidity">
-        <h4><i class="fas fa-tint"></i> BOARD #3 - HUMIDITY</h4><p><span class="reading"><span id="h3"></span> &percnt;</span></p><p class="packet">Reading ID: <span id="rh3"></span></p>
+        <h4><i class="fas fa-tint"></i> Medidor 3 - Umidade</h4>
+        <p><span class="reading"><span id="h3"></span> &percnt;</span></p>
+        <p class="packet">Leitura em: <span id="rh3"></span></p>
       </div>
     </div>
   </div>
@@ -179,8 +188,8 @@ if (!!window.EventSource) {
   var obj = JSON.parse(e.data);
   document.getElementById("t"+obj.id).innerHTML = obj.temperature.toFixed(2);
   document.getElementById("h"+obj.id).innerHTML = obj.humidity.toFixed(2);
-  document.getElementById("rt"+obj.id).innerHTML = obj.readingId;
-  document.getElementById("rh"+obj.id).innerHTML = obj.readingId;
+  document.getElementById("rt"+obj.id).innerHTML = obj.timestamp;
+  document.getElementById("rh"+obj.id).innerHTML = obj.timestamp;
  }, false);
 }
 </script>
@@ -235,6 +244,9 @@ void setup() {
   });
   server.addHandler(&events);
   server.begin();
+
+  timeClient.begin();
+  timeClient.setTimeOffset(3600);
 }
 
 void loop() {
@@ -253,6 +265,16 @@ void loop() {
   int TelaAtual = TelaResumo;
   int brightness = 100;
 
+  while(!timeClient.update()){
+    timeClient.forceUpdate();
+  }
+  // The formattedDate comes with the following format:
+  // 2018-05-28T16:00:13Z
+  // We need to extract date and time
+  formattedDate = timeClient.getFormattedDate();
+  int splitT = formattedDate.indexOf("T");
+  dayStamp = formattedDate.substring(0, splitT);
+  timeStamp = formattedDate.substring(splitT+1, formattedDate.length()-1);
   //
   while (1) {
     M5.update(); //Read the press state of the key.   A, B, C
