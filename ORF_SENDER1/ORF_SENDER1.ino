@@ -1,22 +1,13 @@
-/*
-  Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/esp32-esp-now-wi-fi-web-server/
-  
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files.
-  
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-*/
-
 #include <esp_now.h>
 #include <esp_wifi.h>
 #include <WiFi.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 
+//DOIT ESP32 DEVKIT V1
+
 // Set your Board ID (ESP32 Sender #1 = BOARD_ID 1, ESP32 Sender #2 = BOARD_ID 2, etc)
-#define BOARD_ID 3 //MUDAR PRA TODO MEDIDOR
+#define BOARD_ID 2 //MUDAR PRA TODO MEDIDOR
 
 // Digital pin connected to the DHT sensor
 #define DHTPIN 2  
@@ -154,7 +145,13 @@ void loop() {
       Serial.println("Sent with success");
     }
     else {
-      Serial.println("Error sending the data");
+      Serial.println("Error sending the data, updating channel");
+      int32_t channel = getWiFiChannel(WIFI_SSID);
+      WiFi.printDiag(Serial); // Uncomment to verify channel number before
+      esp_wifi_set_promiscuous(true);
+      esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
+      esp_wifi_set_promiscuous(false);
+      WiFi.printDiag(Serial); // Uncomment to verify channel change after
     }
   }
 }
