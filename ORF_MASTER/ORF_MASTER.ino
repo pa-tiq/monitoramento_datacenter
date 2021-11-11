@@ -493,8 +493,10 @@ void ImprimeSlave(int SlaveId, float Temp, float Hum,boolean changedTela)
   M5.Lcd.printf("%.1f", Temp);
   M5.Lcd.print((char)247);
   M5.Lcd.println("C");
-  
+  if (changedTela)
+  {
   M5.Lcd.pushImage(10, ypos2, 30, 45, (uint16_t *)UMIDADEINVERT);
+  }
   M5.Lcd.setCursor(53, ypos2 + 10);
   M5.Lcd.printf("%.1f%%", Hum);
 }
@@ -519,12 +521,16 @@ void ImprimeMaster(float TM, float HM, boolean Presenca,boolean changedTela)
   M5.Lcd.printf("%.1f", TM);
   M5.Lcd.print((char)247);
   M5.Lcd.println("C");
-  
+  if (changedTela)
+  {
   M5.Lcd.pushImage(10, ypos2, 30, 45, (uint16_t *)UMIDADEINVERT);
+  }
   M5.Lcd.setCursor(63, ypos2 + 10);
   M5.Lcd.printf("%.1f%%", HM);
-  
+  if (changedTela)
+  {
   M5.Lcd.pushImage(10, ypos3, 45, 45, (uint16_t *)MovimentoINVERT);
+  }
   M5.Lcd.setCursor(63, ypos3 + 10);
   if (Presenca)
   { M5.Lcd.setTextSize(3);
