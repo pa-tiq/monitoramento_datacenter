@@ -91,6 +91,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
   Serial.println(macStr);
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
 
+  timeClient.update();
   timeClient.forceUpdate();
   String formatted_Date = timeClient.getFormattedDate();
   int splitT = formatted_Date.indexOf("T");
@@ -369,15 +370,14 @@ void loop() {
       //Serial.print("BtnB mais de 3s");
     }
 
-    if(Presenca!=digitalRead(PirPin))
-    {
-    Presenca=!Presenca;
-    changedValue=true;
-    
-    JSONVar mov;
-    mov["movimento"] = Presenca;
-    String jsonMovimento = JSON.stringify(mov);
-    events.send(jsonMovimento.c_str(), "movimento", millis());
+    if(Presenca!=digitalRead(pirPin)){
+      Presenca=!Presenca;
+      changedValue=true;
+      
+      JSONVar mov;
+      mov["movimento"] = Presenca;
+      String jsonMovimento = JSON.stringify(mov);
+      events.send(jsonMovimento.c_str(), "movimento", millis());
     }      
     currentMillis=millis();
     if (currentMillis - previousMillis >= interval) {
@@ -387,6 +387,7 @@ void loop() {
       TM = readDHTTemperature();
       HM = readDHTHumidity();
 
+      timeClient.update();
       timeClient.forceUpdate();
       String formatted_Date = timeClient.getFormattedDate();
       int splitT = formatted_Date.indexOf("T");
