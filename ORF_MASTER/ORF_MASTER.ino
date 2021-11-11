@@ -57,19 +57,19 @@ const char* ssid = "SENSORES";
 const char* password = "ricardofranco";
 
 // Define NTP Client to get time
-const char* ntpServer = "0.br.pool.ntp.org";
-const long  gmtOffset_sec = -4;
+const char* ntpServer = "a.st1.ntp.br";
+const long  gmtOffset_sec = 0;
 const int   daylightOffset_sec = 3600;
 
 String get_time(){
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time");
-    return "  ";
+    Serial.println("erro ao pegar hora");
+    return String("fail");
   }
-  char timeHour[3];
-  strftime(timeHour,3, "%H", &timeinfo);
-  return timeHour;
+  char timeHour[10];
+  strftime(timeHour,10, "%H:%M:%S", &timeinfo);
+  return String(timeHour);
 }
 
 // Structure example to receive data
@@ -99,11 +99,14 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
   Serial.println(macStr);
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
 
+  //String time_string = get_time();
+  //Serial.print("time string: ");
+  //Serial.println(time_string);
   board["id"] = incomingReadings.id;
   board["temperature"] = incomingReadings.temp;
   board["humidity"] = incomingReadings.hum;
   board["readingId"] = String(incomingReadings.readingId);
-  board["timestamp"] =  " "; //get_time();
+  board["timestamp"] =  " ";
   String jsonString = JSON.stringify(board);
   events.send(jsonString.c_str(), "new_readings", millis());
 
@@ -166,42 +169,42 @@ const char index_html[] PROGMEM = R"rawliteral(
        <div class="card temperature">
         <h4><i class="fas fa-thermometer-half"></i> Medidor Mestre - Temperatura</h4>
         <p><span class="reading"><span id="mastert"></span> &deg;C</span></p>
-        <p class="packet">Leitura em <span id="timestamp1"></span></p>
+        <p class="packet"> <span id="timestamp1"></span></p>
       </div>
       <div class="card humidity">
         <h4><i class="fas fa-tint"></i> Medidor Mestre - Umidade</h4>
         <p><span class="reading"><span id="masterh"></span> &percnt;</span></p>
-        <p class="packet">Leitura em <span id="timestamp2"></span></p>
+        <p class="packet"> <span id="timestamp2"></span></p>
       </div>
       <div class="card temperature">
         <h4><i class="fas fa-thermometer-half"></i> Medidor 1 - Temperatura</h4>
         <p><span class="reading"><span id="t1"></span> &deg;C</span></p>
-        <p class="packet">Leitura em <span id="rt1"></span></p>
+        <p class="packet"> <span id="rt1"></span></p>
       </div>
       <div class="card humidity">
         <h4><i class="fas fa-tint"></i> Medidor 1 - Umidade</h4>
         <p><span class="reading"><span id="h1"></span> &percnt;</span></p>
-        <p class="packet">Leitura em <span id="rh1"></span></p>
+        <p class="packet"> <span id="rh1"></span></p>
       </div>
       <div class="card temperature">
         <h4><i class="fas fa-thermometer-half"></i> Medidor 2 - Temperatura</h4>
         <p><span class="reading"><span id="t2"></span> &deg;C</span></p>
-        <p class="packet">Leitura em <span id="rt2"></span></p>
+        <p class="packet"> <span id="rt2"></span></p>
       </div>
       <div class="card humidity">
         <h4><i class="fas fa-tint"></i> Medidor 2 - Umidade</h4>
         <p><span class="reading"><span id="h2"></span> &percnt;</span></p>
-        <p class="packet">Leitura em <span id="rh2"></span></p>
+        <p class="packet"> <span id="rh2"></span></p>
       </div>
        <div class="card temperature">
         <h4><i class="fas fa-thermometer-half"></i> Medidor 3 - Temperatura</h4>
         <p><span class="reading"><span id="t3"></span> &deg;C</span></p>
-        <p class="packet">Leitura em <span id="rt3"></span></p>
+        <p class="packet"> <span id="rt3"></span></p>
       </div>
       <div class="card humidity">
         <h4><i class="fas fa-tint"></i> Medidor 3 - Umidade</h4>
         <p><span class="reading"><span id="h3"></span> &percnt;</span></p>
-        <p class="packet">Leitura em <span id="rh3"></span></p>
+        <p class="packet"> <span id="rh3"></span></p>
       </div>
     </div>
   </div>
@@ -388,11 +391,13 @@ void loop() {
       //Set values to send
       TM = readDHTTemperature();
       HM = readDHTHumidity();
-
+      //String time_string = get_time();
+      //Serial.print("time string: ");
+      //Serial.println(time_string);  
       JSONVar mast;
       mast["temperature"] = TM;
       mast["humidity"] = HM;
-      mast["timestamp"] = " ";// get_time();
+      mast["timestamp"] = " ";
       String jsonMaster = JSON.stringify(mast);
 
       events.send(jsonMaster.c_str(), "master", millis());
