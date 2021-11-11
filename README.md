@@ -28,6 +28,6 @@ Os valores medidos em cada uma das estações, por meio de um ESP32 que se comun
 
 * 3x ESP32 
 * 4x Sensores DHT11
-* 1x Sensor PIR
+* 1x Sensor HC-SR501 PIR
 * 1x M5Stack
 * 3x Protorboard
