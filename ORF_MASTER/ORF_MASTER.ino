@@ -246,51 +246,51 @@ if (!!window.EventSource) {
 </body>
 </html>)rawliteral";
 
-const char dev_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html>
-<head>
-  <title>dev</title>
-</head>
-<body>
-<p> medidor 1 temperatura: <span id="t1"></span>
-<p> medidor 1 umidade: <span id="h1"></span>
-
-<p> medidor 2 temperatura: <span id="t2"></span>
-<p> medidor 2 umidade: <span id="h2"></span>
-
-<p> medidor 3 temperatura: <span id="t3"></span>
-<p> medidor 3 umidade: <span id="h3"></span>
-
-<p> medidor 3 umidade: <span id="h3"></span>
-<script>
-
-
-if (!!window.EventSource) {
- var source = new EventSource('/events');
-
- source.addEventListener('open', function(e) {
-  console.log("Events Connected");
- }, false);
- source.addEventListener('error', function(e) {
-  if (e.target.readyState != EventSource.OPEN) {
-    console.log("Events Disconnected");
-  }
- }, false);
-
- source.addEventListener('message', function(e) {
-  console.log("message", e.data);
- }, false);
-
- source.addEventListener('new_readings', function(e) {
-  console.log("new_readings", e.data);
-  var obj = JSON.parse(e.data);
-  document.getElementById("t"+obj.id).innerHTML = obj.temperature.toFixed(2);
-  document.getElementById("h"+obj.id).innerHTML = obj.humidity.toFixed(2);
- }, false);
-}
-</script>
-</body>
-</html>)rawliteral";
+//const char dev_html[] PROGMEM = R"rawliteral(
+//<!DOCTYPE HTML><html>
+//<head>
+//  <title>dev</title>
+//</head>
+//<body>
+//<p> medidor 1 temperatura: <span id="t1"></span>
+//<p> medidor 1 umidade: <span id="h1"></span>
+//
+//<p> medidor 2 temperatura: <span id="t2"></span>
+//<p> medidor 2 umidade: <span id="h2"></span>
+//
+//<p> medidor 3 temperatura: <span id="t3"></span>
+//<p> medidor 3 umidade: <span id="h3"></span>
+//
+//<p> medidor 3 umidade: <span id="h3"></span>
+//<script>
+//
+//
+//if (!!window.EventSource) {
+// var source = new EventSource('/events');
+//
+// source.addEventListener('open', function(e) {
+//  console.log("Events Connected");
+// }, false);
+// source.addEventListener('error', function(e) {
+//  if (e.target.readyState != EventSource.OPEN) {
+//    console.log("Events Disconnected");
+//  }
+// }, false);
+//
+// source.addEventListener('message', function(e) {
+//  console.log("message", e.data);
+// }, false);
+//
+// source.addEventListener('new_readings', function(e) {
+//  console.log("new_readings", e.data);
+//  var obj = JSON.parse(e.data);
+//  document.getElementById("t"+obj.id).innerHTML = obj.temperature.toFixed(2);
+//  document.getElementById("h"+obj.id).innerHTML = obj.humidity.toFixed(2);
+// }, false);
+//}
+//</script>
+//</body>
+//</html>)rawliteral";
 
 void setup() {
   M5.begin();
@@ -604,14 +604,14 @@ float readDHTHumidity() {
 
 void IRAM_ATTR PIR_READ() {
 
-      Presenca=!Presenca;
-      changedValue=true;
+  Presenca=!Presenca;
+  changedValue=true;
 
-      JSONVar mov;
-      mov["movimento"] = Presenca;
-      String jsonMovimento = JSON.stringify(mov);
+  JSONVar mov;
+  mov["movimento"] = Presenca;
+  String jsonMovimento = JSON.stringify(mov);
 
-      events.send(jsonMovimento.c_str(), "movimento", millis());
+  events.send(jsonMovimento.c_str(), "movimento", millis());
 }
 
 
@@ -620,4 +620,4 @@ String formaStringdeDados()
   String tripao;
   tripao="TempMestre:"+String(TM)+";HumMestre:"+String(HM)+";TempMed1:"+String(TS1)+";HumMed1:"+String(HS1)+";TempMed2:"+String(TS2)+";HumMed2:"+String(HS2)+";TempMed3:"+String(TS3)+";HumMed3:"+String(HS3)+";SensorMovimento:"+String(Presenca)+";";
   return tripao;
-  }
+}
