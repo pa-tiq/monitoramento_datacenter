@@ -58,8 +58,8 @@ const char* password = "ricardofranco";
 
 // Define NTP Client to get time
 const char* ntpServer = "a.st1.ntp.br";
-const long  gmtOffset_sec = 0;
-const int   daylightOffset_sec = 3600;
+const long  gmtOffset_sec = -14400;
+const int   daylightOffset_sec = 0;
 
 String get_time(){ //ip fixo fez o get_time falhar
   struct tm timeinfo;
@@ -99,14 +99,14 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
   Serial.println(macStr);
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
 
-  //String time_string = get_time();
+  String time_string = get_time();
   //Serial.print("time string: ");
   //Serial.println(time_string);
   board["id"] = incomingReadings.id;
   board["temperature"] = incomingReadings.temp;
   board["humidity"] = incomingReadings.hum;
   board["readingId"] = String(incomingReadings.readingId);
-  board["timestamp"] =  " ";
+  board["timestamp"] =  get_time();//" ";
   String jsonString = JSON.stringify(board);
   events.send(jsonString.c_str(), "new_readings", millis());
 
@@ -268,7 +268,9 @@ void setup() {
   IPAddress local_IP(192, 168, 0, 200);
   IPAddress gateway(192, 168, 0 ,1);
   IPAddress subnet(255, 255, 255, 0);
-  if (!WiFi.config(local_IP,gateway,subnet)) {
+  IPAddress primaryDNS(8, 8, 8, 8);   // optional
+  IPAddress secondaryDNS(8, 8, 4, 4); // optional
+  if (!WiFi.config(local_IP,gateway,subnet,primaryDNS,secondaryDNS)) {
     Serial.println("STA Failed to configure");
   }
   // Set device as a Wi-Fi Station
@@ -397,7 +399,7 @@ void loop() {
       JSONVar mast;
       mast["temperature"] = TM;
       mast["humidity"] = HM;
-      mast["timestamp"] = " ";
+      mast["timestamp"] = get_time();//" ";
       String jsonMaster = JSON.stringify(mast);
 
       events.send(jsonMaster.c_str(), "master", millis());
