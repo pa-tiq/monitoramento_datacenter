@@ -1,7 +1,6 @@
 #include <esp_now.h>
 #include <WiFi.h>
-#include <WiFiUdp.h>
-#include <NTPClient.h>
+#include "time.h"
 #include "ESPAsyncWebServer.h"
 #include <Arduino_JSON.h>
 #include <M5Stack.h>//M5Stack-Core-ESP32
@@ -58,11 +57,20 @@ const char* ssid = "SENSORES";
 const char* password = "ricardofranco";
 
 // Define NTP Client to get time
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP);
-String formattedDate;
-String dayStamp;
-String timeStamp;
+const char* ntpServer = "0.br.pool.ntp.org";
+const long  gmtOffset_sec = -4;
+const int   daylightOffset_sec = 3600;
+
+String get_time(){
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return "  ";
+  }
+  char timeHour[3];
+  strftime(timeHour,3, "%H", &timeinfo);
+  return timeHour;
+}
 
 // Structure example to receive data
 // Must match the sender structure
@@ -91,17 +99,11 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
   Serial.println(macStr);
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
 
-  timeClient.update();
-  timeClient.forceUpdate();
-  String formatted_Date = timeClient.getFormattedDate();
-  int splitT = formatted_Date.indexOf("T");
-  String time_stamp = formatted_Date.substring(splitT+1, formatted_Date.length()-1);
-  
   board["id"] = incomingReadings.id;
   board["temperature"] = incomingReadings.temp;
   board["humidity"] = incomingReadings.hum;
   board["readingId"] = String(incomingReadings.readingId);
-  board["timestamp"] = time_stamp;
+  board["timestamp"] =  " "; //get_time();
   String jsonString = JSON.stringify(board);
   events.send(jsonString.c_str(), "new_readings", millis());
 
@@ -245,6 +247,7 @@ if (!!window.EventSource) {
 </script>
 </body>
 </html>)rawliteral";
+
 void setup() {
   M5.begin();
   M5.Lcd.fillScreen(WHITE);
@@ -277,10 +280,9 @@ void setup() {
   Serial.print("Wi-Fi Channel: ");
   Serial.println(WiFi.channel());
   
-  timeClient.begin();
-  timeClient.setTimeOffset(-14400); //manaus é GMT -4
-  Serial.println("deu certo ligar o timeClient");
-  
+  // Init and get the time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
@@ -387,16 +389,10 @@ void loop() {
       TM = readDHTTemperature();
       HM = readDHTHumidity();
 
-      timeClient.update();
-      timeClient.forceUpdate();
-      String formatted_Date = timeClient.getFormattedDate();
-      int splitT = formatted_Date.indexOf("T");
-      String time_stamp = formatted_Date.substring(splitT+1, formatted_Date.length()-1);
-
       JSONVar mast;
       mast["temperature"] = TM;
       mast["humidity"] = HM;
-      mast["timestamp"] = time_stamp;
+      mast["timestamp"] = " ";// get_time();
       String jsonMaster = JSON.stringify(mast);
 
       events.send(jsonMaster.c_str(), "master", millis());
@@ -577,3 +573,5 @@ String formaStringdeDados()
   tripao="TempMestre:"+String(TM)+";HumMestre:"+String(HM)+";TempMed1:"+String(TS1)+";HumMed1:"+String(HS1)+";TempMed2:"+String(TS2)+";HumMed2:"+String(HS2)+";TempMed3:"+String(TS3)+";HumMed3:"+String(HS3)+";SensorMovimento:"+String(Presenca)+";";
   return tripao;
 }
+
+
