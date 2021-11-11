@@ -51,6 +51,8 @@ void ImprimeSlave(int SlaveId, float Temp, float Hum, boolean changedTela);
 void ImprimeMaster(float TM, float HM, boolean Presenca, boolean changedTela);
 float readDHTTemperature();
 float readDHTHumidity();
+String formaStringdeDados();
+void IRAM_ATTR PIR_READ();
 
 // Replace with your network credentials (STATION)
 const char* ssid = "SENSORES";
@@ -259,7 +261,10 @@ const char dev_html[] PROGMEM = R"rawliteral(
 <p> medidor 3 temperatura: <span id="t3"></span>
 <p> medidor 3 umidade: <span id="h3"></span>
 
+<p> medidor 3 umidade: <span id="h3"></span>
 <script>
+
+
 if (!!window.EventSource) {
  var source = new EventSource('/events');
 
@@ -297,6 +302,8 @@ void setup() {
   // Initialize Serial Monitor
   //Serial.begin(115200);
 
+  dht.begin();
+  attachInterrupt(pirPin, PIR_READ, CHANGE);  // leitura do sensor de presença feita por interrupção
   // Set the device as a Station and Soft Access Point simultaneously
   WiFi.mode(WIFI_AP_STA);
   IPAddress local_IP(192, 168, 0, 200);
@@ -332,11 +339,13 @@ void setup() {
   esp_now_register_recv_cb(OnDataRecv);
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send_P(200, "text/html", index_html);
+   request->send_P(200, "text/html", index_html);
   });
 
+//  server.on("/dev", HTTP_GET, [](AsyncWebServerRequest * request) {
+//  request->send_P(200, "text/html", dev_html);
   server.on("/dev", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send_P(200, "text/html", dev_html);
+  request->send_P(200, "text/plain", formaStringdeDados().c_str());
   });
 
   events.onConnect([](AsyncEventSourceClient * client) {
@@ -366,8 +375,8 @@ void loop() {
 
     // sensor de temperatura
   unsigned long previousMillis = 0;   // Stores last time temperature was published
-   unsigned long currentMillis = 0;
-  const int interval = 5000;        // Interval at which to publish DTH sensor readings
+  unsigned long currentMillis = 0;
+  unsigned long interval = 5000;        // Interval at which to publish DTH sensor readings
 
   while (1) {
     if ((millis() - lastEventTime) > EVENT_INTERVAL_MS) {
@@ -406,18 +415,6 @@ void loop() {
         delay(50);
       }
       //Serial.print("BtnB mais de 3s");
-    }
-
-    if(digitalRead(pirPin)!= Presenca)
-    {
-      Presenca=!Presenca;
-      changedValue=true;
-
-      JSONVar mov;
-      mov["movimento"] = Presenca;
-      String jsonMovimento = JSON.stringify(mov);
-
-      events.send(jsonMovimento.c_str(), "movimento", millis());
     }
 
     currentMillis=millis();
@@ -487,7 +484,7 @@ void ImprimeResumo(float TM, float HM, boolean Presenca, float TS1, float HS1,  
   M5.Lcd.printf("C \nUmidade: %.1f%% \n", HM);
   M5.Lcd.printf("Sensor de Presenca: ");
   if (Presenca)
-  { M5.Lcd.println("Detectada");
+  { M5.Lcd.println("Detectada    ");
   }
   else {
     M5.Lcd.println("Nao Detectada");
@@ -571,7 +568,7 @@ void ImprimeMaster(float TM, float HM, boolean Presenca,boolean changedTela)
     M5.Lcd.println("Detectada");
   }
   else {
-    M5.Lcd.println("-------  ");
+    M5.Lcd.println("-------");
   }
 }
 
@@ -604,3 +601,23 @@ float readDHTHumidity() {
     return h;
   }
 }
+
+void IRAM_ATTR PIR_READ() {
+
+      Presenca=!Presenca;
+      changedValue=true;
+
+      JSONVar mov;
+      mov["movimento"] = Presenca;
+      String jsonMovimento = JSON.stringify(mov);
+
+      events.send(jsonMovimento.c_str(), "movimento", millis());
+}
+
+
+String formaStringdeDados()
+{
+  String tripao;
+  tripao="TempMestre:"+String(TM)+";HumMestre:"+String(HM)+";TempMed1:"+String(TS1)+";HumMed1:"+String(HS1)+";TempMed2:"+String(TS2)+";HumMed2:"+String(HS2)+";TempMed3:"+String(TS3)+";HumMed3:"+String(HS3)+";SensorMovimento:"+String(Presenca)+";";
+  return tripao;
+  }
