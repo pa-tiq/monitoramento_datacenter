@@ -61,7 +61,7 @@ const char* ntpServer = "a.st1.ntp.br";
 const long  gmtOffset_sec = 0;
 const int   daylightOffset_sec = 3600;
 
-String get_time(){
+String get_time(){ //ip fixo fez o get_time falhar
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo)){
     Serial.println("erro ao pegar hora");
