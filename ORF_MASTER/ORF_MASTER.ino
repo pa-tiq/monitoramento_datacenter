@@ -52,7 +52,6 @@ void ImprimeMaster(float TM, float HM, boolean Presenca, boolean changedTela);
 float readDHTTemperature();
 float readDHTHumidity();
 String formaStringdeDados();
-void IRAM_ATTR PIR_READ();
 
 // Replace with your network credentials (STATION)
 const char* ssid = "SENSORES";
@@ -135,7 +134,7 @@ void OnDataRecv(const uint8_t * mac_addr, const uint8_t *incomingData, int len) 
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html>
 <head>
-  <title>ESP32 DASHBOARD</title>
+  <title>Sistema de Monitoramento de Datacenter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
   <link rel="icon" href="data:,">
@@ -245,53 +244,6 @@ if (!!window.EventSource) {
 </script>
 </body>
 </html>)rawliteral";
-
-//const char dev_html[] PROGMEM = R"rawliteral(
-//<!DOCTYPE HTML><html>
-//<head>
-//  <title>dev</title>
-//</head>
-//<body>
-//<p> medidor 1 temperatura: <span id="t1"></span>
-//<p> medidor 1 umidade: <span id="h1"></span>
-//
-//<p> medidor 2 temperatura: <span id="t2"></span>
-//<p> medidor 2 umidade: <span id="h2"></span>
-//
-//<p> medidor 3 temperatura: <span id="t3"></span>
-//<p> medidor 3 umidade: <span id="h3"></span>
-//
-//<p> medidor 3 umidade: <span id="h3"></span>
-//<script>
-//
-//
-//if (!!window.EventSource) {
-// var source = new EventSource('/events');
-//
-// source.addEventListener('open', function(e) {
-//  console.log("Events Connected");
-// }, false);
-// source.addEventListener('error', function(e) {
-//  if (e.target.readyState != EventSource.OPEN) {
-//    console.log("Events Disconnected");
-//  }
-// }, false);
-//
-// source.addEventListener('message', function(e) {
-//  console.log("message", e.data);
-// }, false);
-//
-// source.addEventListener('new_readings', function(e) {
-//  console.log("new_readings", e.data);
-//  var obj = JSON.parse(e.data);
-//  document.getElementById("t"+obj.id).innerHTML = obj.temperature.toFixed(2);
-//  document.getElementById("h"+obj.id).innerHTML = obj.humidity.toFixed(2);
-// }, false);
-//}
-//</script>
-//</body>
-//</html>)rawliteral";
-
 void setup() {
   M5.begin();
   M5.Lcd.fillScreen(WHITE);
@@ -303,7 +255,7 @@ void setup() {
   //Serial.begin(115200);
 
   dht.begin();
-  attachInterrupt(pirPin, PIR_READ, CHANGE);  // leitura do sensor de presença feita por interrupção
+  
   // Set the device as a Station and Soft Access Point simultaneously
   WiFi.mode(WIFI_AP_STA);
   IPAddress local_IP(192, 168, 0, 200);
@@ -417,6 +369,16 @@ void loop() {
       //Serial.print("BtnB mais de 3s");
     }
 
+    if(Presenca!=digitalRead(PirPin))
+    {
+    Presenca=!Presenca;
+    changedValue=true;
+    
+    JSONVar mov;
+    mov["movimento"] = Presenca;
+    String jsonMovimento = JSON.stringify(mov);
+    events.send(jsonMovimento.c_str(), "movimento", millis());
+    }      
     currentMillis=millis();
     if (currentMillis - previousMillis >= interval) {
       // Save the last time a new reading was published
@@ -601,19 +563,6 @@ float readDHTHumidity() {
     return h;
   }
 }
-
-void IRAM_ATTR PIR_READ() {
-
-  Presenca=!Presenca;
-  changedValue=true;
-
-  JSONVar mov;
-  mov["movimento"] = Presenca;
-  String jsonMovimento = JSON.stringify(mov);
-
-  events.send(jsonMovimento.c_str(), "movimento", millis());
-}
-
 
 String formaStringdeDados()
 {
