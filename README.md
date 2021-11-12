@@ -22,7 +22,25 @@ O objetivo do projeto foi a implementação de uma rede de sensores integrada po
 
 Como forma de realizar a medição foram identificados os pontos críticos de aquecimento, que deveriam possuir o monitoramento continuado. Dessa forma os sensores seriam instalados na entrada da ventilação dos dois racks dos servidores e no rack de roteamento das unidades. Além disso, um M5Stack servirá como monitor central fazendo medição de temperatura afastado, agindo como parâmetro de comparação e fazendo o monitoramento da entrada de pessoas na sala.
 
-Os valores medidos em cada uma das estações, por meio de três ESP32 que se comunicam por meio da rede WiFi com o M5Stack, são apresentados na tela localmente e também enviados para um servidor para monitoramento e acompanhamento remoto por meio de uma página http.
+Os valores medidos em cada uma das estações, por meio de três ESP32 que se comunicam por meio da rede WiFi com o M5Stack, são apresentados na tela localmente e também enviados para um servidor para monitoramento e acompanhamento remoto por meio de uma página http. 
+
+Para os ESP32 Sender:
+
+| PINO  | FUNÇÃO  | VARIÁVEL  | 
+| :---: | :---: | :---: |
+|3.3V|Alimentação| |
+|GND|Ground| |
+|D12|Sinal do Sensor de Temperatura|dht|
+
+Para os M5 Stack Master:
+
+| PINO  | FUNÇÃO  | VARIÁVEL  | 
+| :---: | :---: | :---: |
+|3.3V|Alimentação Sensor de Temperatura| |
+|5V|Alimentação Sensor de Presença| |
+|GND|Ground| |
+|D2|Sinal do Sensor de Temperatura|dht|
+|D22|Sinal do Sensor de Presença|pirpin|
 
 ### Lista de Materiais
 
